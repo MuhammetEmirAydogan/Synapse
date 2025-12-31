@@ -1,43 +1,48 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_chroma import Chroma
 from app.services.vector_db import get_vector_store
 from app.core.config import settings
 
-def get_answer(question: str, model_type: str = "flash"):
-    # 1. Model Seçimi 
+# Güncelleme: source_file parametresi eklendi
+def get_answer(question: str, model_type: str = "flash", source_file: str = None):
+    
+    # 1. Model Seçimi (Senin çalışan 2.5 modellerin)
     if model_type == "pro":
-        # Listendeki en baba model
         model_name = "gemini-2.5-pro"
     else:
-        # Listendeki en hızlı ve güncel flash model
         model_name = "gemini-2.5-flash"
 
-    print(f"Seçilen Model: {model_name}")
+    print(f"Model: {model_name} | Hedef Dosya: {source_file if source_file else 'Tümü'}")
 
-    # 2. Veritabanına Bağlan ve Ara
+    # 2. Veritabanı ve Filtreleme
     db = get_vector_store()
-    # Benzerlik araması yap
-    docs = db.similarity_search(question, k=3)
+    
+    # FİLTRE MEKANİZMASI BURADA
+    search_kwargs = {"k": 3}
+    if source_file:
+        # Eğer bir dosya adı geldiyse, sadece o 'source' etiketine sahip olanları getir
+        search_kwargs["filter"] = {"source": source_file}
+    
+    # Aramayı yap
+    docs = db.similarity_search(question, **search_kwargs)
     
     # Context (Bağlam) oluştur
     context = "\n\n".join([doc.page_content for doc in docs])
     
-    # Hangi dosyalardan bulduğunu not al
-    sources = list(set([doc.metadata.get("source", "Bilinmiyor") for doc in docs]))
+    # Bulunan kaynakları listele
+    found_sources = list(set([doc.metadata.get("source", "Bilinmiyor") for doc in docs]))
     
-    # 3. Gemini Modelini Hazırla
+    # 3. Gemini Hazırlığı
     llm = ChatGoogleGenerativeAI(
         model=model_name, 
         google_api_key=settings.GOOGLE_API_KEY,
         temperature=0.3
     )
     
-    # 4. Prompt'u Hazırla
+    # 4. Prompt
     prompt = f"""
-    Sen yardımsever bir asistansın. Aşağıdaki bağlamı (Context) kullanarak soruyu cevapla.
-    Eğer cevap bağlamda yoksa, dürüstçe "Bu konuda bilgim yok" de, uydurma.
+    Sen yardımsever bir asistansın. Sadece aşağıdaki bağlamı kullanarak cevap ver.
     
-    Bağlam:
+    Bağlam ({'Tüm Dosyalar' if not source_file else source_file}):
     {context}
     
     Soru:
@@ -46,7 +51,7 @@ def get_answer(question: str, model_type: str = "flash"):
     Cevap:
     """
     
-    # 5. Modeli Çalıştır
+    # Modeli Çalıştır
     response = llm.invoke(prompt)
     
-    return response.content, sources, model_name
+    return response.content, found_sources, model_name

@@ -1,10 +1,12 @@
 from pydantic import BaseModel
+from typing import Optional  
 
-class QueryRequest(BaseModel):
+class ChatRequest(BaseModel):
     question: str
-    model_type: str = "flash"  
+    model_type: str = "flash"
+    file_name: Optional[str] = None 
 
-class QueryResponse(BaseModel):
+class ChatResponse(BaseModel):
     answer: str
     sources: list[str] = []
-    used_model: str 
+    used_model: str
