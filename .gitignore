@@ -1,0 +1,15 @@
+# Python önbellek dosyaları (Gereksiz kalabalık)
+__pycache__/
+*.pyc
+
+# Çevresel Değişkenler (ÇOK ÖNEMLİ - GÜVENLİK)
+.env
+.env.local
+
+# IDE dosyaları (VSCode vs ayarları repoya gitmesin)
+.vscode/
+.idea/
+
+# Sanal Ortam klasörü (Kütüphaneler repoya yüklenmez, requirements.txt yeterli)
+venv/
+env/
