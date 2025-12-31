@@ -13,3 +13,4 @@ __pycache__/
 # Sanal Ortam klasörü (Kütüphaneler repoya yüklenmez, requirements.txt yeterli)
 venv/
 env/
+data/
