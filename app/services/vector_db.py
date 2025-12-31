@@ -1,6 +1,6 @@
 import time
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from app.core.config import settings
 
 # 1. Embedding Modelini Hazırla
@@ -24,7 +24,6 @@ def add_texts_to_db(texts: list, metadatas: list, batch_size: int = 10):
     
     total_docs = len(texts)
     
-    # Döngü: Verileri 10'arlı gruplar halinde işle
     for i in range(0, total_docs, batch_size):
         batch_texts = texts[i : i + batch_size]
         batch_metadatas = metadatas[i : i + batch_size]
@@ -32,7 +31,7 @@ def add_texts_to_db(texts: list, metadatas: list, batch_size: int = 10):
         print(f"Batch işleniyor: {i} - {i + len(batch_texts)} arası...")
         
         db.add_texts(texts=batch_texts, metadatas=batch_metadatas)
+        # Rate limit koruması
         time.sleep(2)
         
-    db.persist()
     return True

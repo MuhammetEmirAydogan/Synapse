@@ -1,11 +1,10 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-def chunk_text(text: str):
-    
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,   # Her parça yaklaşık 1000 karakter olsun
-        chunk_overlap=200  # Parçalar arası 200 karakterlik örtüşme olsun
+def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap
     )
     
-    chunks = splitter.split_text(text)
+    chunks = text_splitter.split_text(text)
     return chunks
