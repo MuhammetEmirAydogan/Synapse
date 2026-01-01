@@ -3,17 +3,21 @@ from app.services.file_ops import save_upload_file
 from app.services.pdf_loader import load_pdf_text
 from app.services.splitter import chunk_text
 from app.services.vector_db import add_texts_to_db
-from app.models.schemas import ChatRequest, ChatResponse
 from app.services.chat_service import get_answer
-from app.api.auth import router as auth_router 
+from app.schemas import ChatRequest, ChatResponse
+
+# API Modüllerini İçe Aktar
+from app.api import auth, invitations 
 
 router = APIRouter()
 
-# --- 1. AUTH MODÜLÜNÜ BAĞLA ---
-router.include_router(auth_router, tags=["Authentication"])
+# --- 1. AUTH MODÜLÜ ---
+router.include_router(auth.router, tags=["Authentication"])
 
+# --- 2. KURUMSAL MODÜL ---
+router.include_router(invitations.router, tags=["Invitations"])
 
-# --- 2. DOSYA YÜKLEME  ---
+# --- 3. DOSYA YÜKLEME ---
 @router.post("/upload", tags=["Chat & Files"])
 async def upload_document(file: UploadFile = File(...)):
     if not file.filename.endswith(".pdf"):
@@ -41,7 +45,7 @@ async def upload_document(file: UploadFile = File(...)):
         print(f"Upload Hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- 3. SORU SORMA ---
+# --- 4. SORU SORMA ---
 @router.post("/ask", response_model=ChatResponse, tags=["Chat & Files"])
 def ask_question(request: ChatRequest):
     try:

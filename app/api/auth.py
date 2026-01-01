@@ -4,38 +4,45 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 
 from app.core.database import get_db
-from app.models.sql import User, Company
+from app.models.sql import User, Company, UserRole # Enum'ı ekledik
 from app.core.security import get_password_hash, verify_password, create_access_token
-from app.schemas import UserCreate, Token, UserOut
+from app.schemas import UserCreateWithCompany, Token, UserOut 
 from app.core.config import settings
 from app.api.deps import get_current_user 
 
 router = APIRouter()
 
-# --- 1. KAYIT OL ---
+# --- 1. KURUMSAL KAYIT ---
 @router.post("/register", response_model=UserOut)
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    # A. Bu email daha önce alınmış mı?
-    user = db.query(User).filter(User.email == user_in.email).first()
-    if user:
+def register_company_and_admin(user_in: UserCreateWithCompany, db: Session = Depends(get_db)):
+
+    # A. Email Kontrolü
+    if db.query(User).filter(User.email == user_in.email).first():
         raise HTTPException(
             status_code=400,
-            detail="Bu email adresi zaten sistemde kayıtlı."
+            detail="Bu email adresi zaten kayıtlı."
         )
 
-    # B. Şirket Oluştur 
+    # B. Şirket İsmi Kontrolü 
+    if db.query(Company).filter(Company.name == user_in.company_name).first():
+        raise HTTPException(
+            status_code=400,
+            detail="Bu şirket ismi zaten alınmış. Lütfen başka bir isim seçin."
+        )
+
+    # C. Şirketi Kur
     new_company = Company(name=user_in.company_name)
     db.add(new_company)
     db.commit()
     db.refresh(new_company)
 
-    # C. Kullanıcıyı Oluştur 
+    # D. Patronu Oluştur 
     new_user = User(
         email=user_in.email,
         hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name,
-        company_id=new_company.id,
-        role="admin" 
+        company_id=new_company.id, 
+        role=UserRole.COMPANY_ADMIN 
     )
     db.add(new_user)
     db.commit()
@@ -43,7 +50,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     
     return new_user
 
-# --- 2. GİRİŞ YAP ---
+# --- 2. GİRİŞ YAP  ---
 @router.post("/token", response_model=Token)
 def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), 
