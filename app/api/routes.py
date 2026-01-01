@@ -3,14 +3,18 @@ from app.services.file_ops import save_upload_file
 from app.services.pdf_loader import load_pdf_text
 from app.services.splitter import chunk_text
 from app.services.vector_db import add_texts_to_db
-# DİKKAT: Artık QueryRequest değil, ChatRequest kullanıyoruz
-from app.models.schemas import ChatRequest, ChatResponse 
+from app.models.schemas import ChatRequest, ChatResponse
 from app.services.chat_service import get_answer
+from app.api.auth import router as auth_router 
 
 router = APIRouter()
 
-# 1. DOSYA YÜKLEME
-@router.post("/upload")
+# --- 1. AUTH MODÜLÜNÜ BAĞLA ---
+router.include_router(auth_router, tags=["Authentication"])
+
+
+# --- 2. DOSYA YÜKLEME  ---
+@router.post("/upload", tags=["Chat & Files"])
 async def upload_document(file: UploadFile = File(...)):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Sadece PDF dosyaları yüklenebilir.")
@@ -23,7 +27,7 @@ async def upload_document(file: UploadFile = File(...)):
         full_text = load_pdf_text(file_path)
         chunks = chunk_text(full_text)
         
-        # Veritabanına kaydet (Burada source=dosya_adi ekleniyor, bu önemli!)
+        # Veritabanına kaydet
         metadatas = [{"source": file.filename} for _ in chunks]
         success = add_texts_to_db(chunks, metadatas)
         
@@ -37,8 +41,8 @@ async def upload_document(file: UploadFile = File(...)):
         print(f"Upload Hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# 2. SORU SORMA 
-@router.post("/ask", response_model=ChatResponse)
+# --- 3. SORU SORMA ---
+@router.post("/ask", response_model=ChatResponse, tags=["Chat & Files"])
 def ask_question(request: ChatRequest):
     try:
         answer, sources, used_model = get_answer(

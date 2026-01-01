@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # Docker-Compose dosyasındaki bilgilerle eşleşen adres:
-SQLALCHEMY_DATABASE_URL = "postgresql://synapse_user:synapse_password@localhost:5432/synapse_db"
+SQLALCHEMY_DATABASE_URL = "postgresql://synapse_user:synapse_password@localhost:5433/synapse_db"
 
 # Motoru Bağla
 engine = create_engine(SQLALCHEMY_DATABASE_URL)

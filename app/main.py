@@ -3,17 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routes import router as api_router
 from app.core.database import engine, Base
-from app.models import sql 
+import app.models.sql 
 
-# Uygulama başlarken Veritabanı Tablolarını oluştur
+# Tabloları veritabanında oluştur
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version=settings.VERSION
+    version=settings.VERSION,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# --- CORS AYARLARI  ---
+# --- CORS AYARLARI ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -31,5 +32,5 @@ async def health_check():
         "project": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "status": "active",
-        "database": "PostgreSQL Connected "
+        "database": "PostgreSQL Connected"
     }
