@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import secrets 
@@ -88,3 +89,22 @@ def accept_invitation(accept_in: InvitationAccept, db: Session = Depends(get_db)
     db.refresh(new_user)
     
     return new_user
+
+# --- 3. DAVETLERİ LİSTELE  ---
+@router.get("/", response_model=List[InvitationOut])
+def get_company_invitations(
+    current_user: UserOut = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Yetki Kontrolü
+    if current_user.role != UserRole.COMPANY_ADMIN:
+        raise HTTPException(
+            status_code=403, 
+            detail="Bu listeyi görüntüleme yetkiniz yok."
+        )
+
+    invitations = db.query(Invitation).filter(
+        Invitation.company_id == current_user.company_id
+    ).all()
+    
+    return invitations
